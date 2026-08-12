@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Response, status, Request
 app = FastAPI()
 
 tasks = [
@@ -23,4 +23,21 @@ async def tasksId(id: int,response: Response):
 			return task
 	response.status_code = 404
 	return {"error": f"Task {id} not found"}		
+
+@app.post("/tasks",status_code=201)
+async def createTask(request: Request,response: Response):
+	data = await request.json()
+	title = data["title"]
+	if not title:
+		response.status_code = 400
+		return {"error": "Title is empty"}
+	done = "Pending"
+	id = max(task["id"] for task in tasks) + 1 if tasks else 1
+	new_task={
+	"id": id,
+	"title": title,
+	"done": done
+}
+	tasks.append(new_task)
+	return tasks[id-1]
 
