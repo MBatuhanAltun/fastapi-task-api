@@ -1,9 +1,30 @@
-# Tasks API
+# Task API — AI rematch
 
-A beginner-friendly REST API built with Python and FastAPI. It stores tasks in
-memory, so no database or setup beyond Python is required.
+This Python and FastAPI application provides a small task CRUD API. All data is
+kept in memory: there is no database or file persistence, and restarting the
+server restores the three example tasks.
 
-The API starts with this example task:
+## Run it
+
+Python 3.10 or newer is required.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+On Windows PowerShell, activate the environment with:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+The API runs at <http://127.0.0.1:8000>. Use the interactive Swagger UI at
+<http://127.0.0.1:8000/docs> or ReDoc at <http://127.0.0.1:8000/redoc>.
+
+## Task format
 
 ```json
 {
@@ -13,131 +34,36 @@ The API starts with this example task:
 }
 ```
 
-> Data exists only while the server is running. Restarting the server resets
-> the task list to the example above.
-
-## Requirements
-
-- Python 3.10 or newer
-
-## Run the API
-
-Open a terminal in this folder and follow these steps.
-
-### 1. Create a virtual environment
-
-```bash
-python3 -m venv .venv
-```
-
-### 2. Activate it
-
-Linux or macOS:
-
-```bash
-source .venv/bin/activate
-```
-
-Windows PowerShell:
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-### 3. Install the packages
-
-```bash
-python -m pip install -r requirements.txt
-```
-
-### 4. Start the server
-
-```bash
-uvicorn main:app --reload
-```
-
-The API is now available at <http://127.0.0.1:8000>.
-
-Open <http://127.0.0.1:8000/docs> for interactive Swagger documentation where
-you can try every endpoint in the browser. Alternative ReDoc documentation is
-available at <http://127.0.0.1:8000/redoc>.
+`title` must be a non-empty string after surrounding whitespace is removed.
+`done` must be a JSON boolean and defaults to `false` during creation. The API
+assigns positive integer IDs. Invalid request data returns `400 Bad Request`.
 
 ## Endpoints
 
-| Method | Path | Purpose | Success status |
+| Method | Path | Description | Success |
 | --- | --- | --- | --- |
-| `GET` | `/` | Get the API version | `200 OK` |
-| `GET` | `/health` | Check API health | `200 OK` |
-| `GET` | `/tasks` | List all tasks | `200 OK` |
-| `GET` | `/tasks?done=true` | List completed tasks | `200 OK` |
-| `GET` | `/tasks?done=false` | List incomplete tasks | `200 OK` |
-| `GET` | `/tasks/{task_id}` | Get one task | `200 OK` |
+| `GET` | `/` | Return API information | `200 OK` |
+| `GET` | `/health` | Return health status | `200 OK` |
+| `GET` | `/tasks` | List tasks, optionally filtered with `?done=true` or `?done=false` | `200 OK` |
+| `GET` | `/tasks/{id}` | Return one task | `200 OK` |
 | `POST` | `/tasks` | Create a task | `201 Created` |
-| `PUT` | `/tasks/{task_id}` | Replace a task | `200 OK` |
-| `PATCH` | `/tasks/{task_id}` | Update selected task fields | `200 OK` |
-| `DELETE` | `/tasks/{task_id}` | Delete a task | `204 No Content` |
+| `PUT` | `/tasks/{id}` | Update `title`, `done`, or both | `200 OK` |
+| `DELETE` | `/tasks/{id}` | Delete a task without a response body | `204 No Content` |
 
-Requests with invalid data receive `422 Unprocessable Entity`. Looking up,
-updating, or deleting a task that does not exist receives `404 Not Found`.
+Requests for unknown positive IDs return `404 Not Found`.
 
-## Quick examples
-
-List every task:
+## Example requests
 
 ```bash
 curl http://127.0.0.1:8000/tasks
-```
 
-List only tasks that are not done:
-
-```bash
-curl "http://127.0.0.1:8000/tasks?done=false"
-```
-
-Get task 1:
-
-```bash
-curl http://127.0.0.1:8000/tasks/1
-```
-
-Create a task:
-
-```bash
 curl -X POST http://127.0.0.1:8000/tasks \
   -H "Content-Type: application/json" \
-  -d '{"title":"Read a book","done":false}'
-```
+  -d '{"title":"Write tests"}'
 
-Replace task 1:
-
-```bash
 curl -X PUT http://127.0.0.1:8000/tasks/1 \
   -H "Content-Type: application/json" \
-  -d '{"title":"Study FastAPI","done":true}'
-```
-
-Update only the `done` value of task 1:
-
-```bash
-curl -X PATCH http://127.0.0.1:8000/tasks/1 \
-  -H "Content-Type: application/json" \
   -d '{"done":true}'
+
+curl -i -X DELETE http://127.0.0.1:8000/tasks/1
 ```
-
-Delete task 1:
-
-```bash
-curl -X DELETE http://127.0.0.1:8000/tasks/1
-```
-
-## Data validation
-
-- `id` must be a positive integer and is assigned by the API.
-- `title` is required when creating or replacing a task, cannot be blank, and
-  can contain at most 200 characters.
-- `done` must be a JSON boolean (`true` or `false`) and defaults to `false`
-  when a task is created.
-- A `PATCH` request must contain at least one field.
-
-FastAPI also publishes the machine-readable OpenAPI schema at
-<http://127.0.0.1:8000/openapi.json>.

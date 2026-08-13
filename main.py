@@ -1,92 +1,102 @@
 from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Path, Query, Response, status
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator, model_validator
+from fastapi import FastAPI, HTTPException, Path, Query, Request, Response, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
 
-
-API_VERSION = "1.0.0"
 
 app = FastAPI(
-    title="Tasks API",
-    description="A small in-memory API for creating and managing tasks.",
-    version=API_VERSION,
+    title="Task API",
+    description="An in-memory API for learning FastAPI and HTTP CRUD operations.",
+    version="1.0",
 )
 
 
-class VersionResponse(BaseModel):
+class ApiInfo(BaseModel):
+    name: str
     version: str
+    endpoints: list[str]
 
 
-class HealthResponse(BaseModel):
+class HealthStatus(BaseModel):
     status: str
 
 
-class TaskFields(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class TaskCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    title: str = Field(min_length=1, max_length=200, examples=["Study"])
+    title: str = Field(min_length=1, examples=["Study"])
     done: StrictBool = Field(default=False, examples=[False])
-
-    @field_validator("title")
-    @classmethod
-    def title_must_not_be_blank(cls, value: str) -> str:
-        if not value:
-            raise ValueError("title must not be blank")
-        return value
-
-
-class TaskCreate(TaskFields):
-    pass
 
 
 class TaskUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    title: str | None = Field(default=None, min_length=1, max_length=200)
+    title: str | None = Field(default=None, min_length=1)
     done: StrictBool | None = None
 
     @model_validator(mode="after")
-    def validate_update(self) -> "TaskUpdate":
+    def require_a_non_null_field(self) -> "TaskUpdate":
         if not self.model_fields_set:
-            raise ValueError("provide at least one field to update")
-        if "title" in self.model_fields_set and not self.title:
-            raise ValueError("title must not be blank or null")
+            raise ValueError("request body must contain title and/or done")
+        if "title" in self.model_fields_set and self.title is None:
+            raise ValueError("title must not be null")
         if "done" in self.model_fields_set and self.done is None:
             raise ValueError("done must not be null")
         return self
 
 
-class Task(TaskFields):
+class Task(BaseModel):
     id: int = Field(gt=0, examples=[1])
+    title: str
+    done: StrictBool
 
 
 tasks: dict[int, Task] = {
     1: Task(id=1, title="Study", done=False),
+    2: Task(id=2, title="Read", done=True),
+    3: Task(id=3, title="Exercise", done=True),
 }
-next_task_id = 2
+next_task_id = 4
 
 
-@app.get("/", response_model=VersionResponse, tags=["System"])
-async def get_version() -> VersionResponse:
-    return VersionResponse(version=API_VERSION)
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(
+    request: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    del request
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={
+            "error": "Invalid request",
+            "details": jsonable_encoder(exc.errors()),
+        },
+    )
 
 
-@app.get("/health", response_model=HealthResponse, tags=["System"])
-async def get_health() -> HealthResponse:
-    return HealthResponse(status="healthy")
+@app.get("/", response_model=ApiInfo, tags=["System"])
+async def root() -> ApiInfo:
+    return ApiInfo(name="Task API", version="1.0", endpoints=["tasks"])
+
+
+@app.get("/health", response_model=HealthStatus, tags=["System"])
+async def health() -> HealthStatus:
+    return HealthStatus(status="OK")
 
 
 @app.get("/tasks", response_model=list[Task], tags=["Tasks"])
 async def get_tasks(
     done: Annotated[
         bool | None,
-        Query(description="Return only completed or incomplete tasks."),
+        Query(description="Filter tasks by completion status."),
     ] = None,
 ) -> list[Task]:
-    all_tasks = list(tasks.values())
     if done is None:
-        return all_tasks
-    return [task for task in all_tasks if task.done is done]
+        return list(tasks.values())
+    return [task for task in tasks.values() if task.done is done]
 
 
 @app.get("/tasks/{task_id}", response_model=Task, tags=["Tasks"])
@@ -102,28 +112,16 @@ async def get_task(
     status_code=status.HTTP_201_CREATED,
     tags=["Tasks"],
 )
-async def create_task(task_data: TaskCreate, response: Response) -> Task:
+async def create_task(task_data: TaskCreate) -> Task:
     global next_task_id
 
     task = Task(id=next_task_id, **task_data.model_dump())
     tasks[task.id] = task
     next_task_id += 1
-    response.headers["Location"] = f"/tasks/{task.id}"
     return task
 
 
 @app.put("/tasks/{task_id}", response_model=Task, tags=["Tasks"])
-async def replace_task(
-    task_id: Annotated[int, Path(gt=0, description="The task ID.")],
-    task_data: TaskCreate,
-) -> Task:
-    find_task(task_id)
-    task = Task(id=task_id, **task_data.model_dump())
-    tasks[task_id] = task
-    return task
-
-
-@app.patch("/tasks/{task_id}", response_model=Task, tags=["Tasks"])
 async def update_task(
     task_id: Annotated[int, Path(gt=0, description="The task ID.")],
     task_data: TaskUpdate,
@@ -152,6 +150,6 @@ def find_task(task_id: int) -> Task:
     if task is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Task {task_id} was not found",
+            detail=f"Task {task_id} not found",
         )
     return task
