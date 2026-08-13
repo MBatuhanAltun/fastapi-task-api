@@ -51,7 +51,7 @@ async def createTask(request: Request,response: Response,):
     if not title:
         response.status_code = 400
         return {"error": "Title is empty"}
-    done = "Pending"
+    done = False
     id = max(task["id"] for task in tasks) + 1 if tasks else 1
     new_task={
     "id": id,
