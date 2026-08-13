@@ -9,18 +9,22 @@ tasks = [
 
 @app.get("/")
 async def root():
+    """Return all tasks."""
     return {"name": "Task API", "version": "1.0", "endpoints": ["tasks"] }
 
 @app.get("/health")
 async def health():
+    """Check health status."""
     return { "status" : "OK" }
 
 @app.get("/tasks")
 async def getTasks():
+    """Return tasks."""
     return tasks
 
 @app.get("/tasks/{id}", status_code=200)
 async def tasksId(id: int,response: Response):
+    """Return a task by its ID."""
     for task in tasks:
         if task["id"] == id:
             return task
@@ -29,6 +33,7 @@ async def tasksId(id: int,response: Response):
 
 @app.post("/tasks",status_code=201)
 async def createTask(request: Request,response: Response):
+    """Create a new task."""
     data = await request.json()
     title = data["title"]
     if not title:
@@ -47,6 +52,7 @@ async def createTask(request: Request,response: Response):
 
 @app.put("/tasks/{id}")
 async def update_task(id: int, request: Request, response: Response):
+    """Update an existing task."""
     try:
         data = await request.json()
     except (ValueError, UnicodeDecodeError):
@@ -78,6 +84,7 @@ async def update_task(id: int, request: Request, response: Response):
 
 @app.delete("/tasks/{id}")
 async def delete_task(id: int,response: Response):
+    """Delete a task by its ID."""
     for i in range(len(tasks)):
         if tasks[i]["id"] == id:
             tasks.pop(i)
