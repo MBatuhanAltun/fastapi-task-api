@@ -47,7 +47,7 @@ async def tasksId(id: int,response: Response):
 async def createTask(request: Request,response: Response,):
     """Create a new task."""
     data = await request.json()
-    title = data["title"]
+    title = data.get("title")
     if not title:
         response.status_code = 400
         return {"error": "Title is empty"}
@@ -59,7 +59,7 @@ async def createTask(request: Request,response: Response,):
     "done": done
 }
     tasks.append(new_task)
-    return tasks[id-1]
+    return new_task
 
 
 @app.put("/tasks/{id}")
