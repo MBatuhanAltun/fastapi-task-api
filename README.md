@@ -1,6 +1,6 @@
 # FastAPI Task API
 
-A small in-memory REST API for learning FastAPI and core HTTP concepts. It supports creating, reading, updating, and deleting tasks, returns appropriate HTTP status codes, validates task updates, and provides interactive Swagger documentation.
+A small in-memory REST API for learning FastAPI and core HTTP concepts. It supports creating, reading, filtering, updating, and deleting tasks, returns appropriate HTTP status codes, validates task updates, and provides interactive Swagger documentation.
 
 ## Run locally
 
@@ -22,13 +22,27 @@ The API will be available at `http://127.0.0.1:8000`. Task data is stored in mem
 |---|---|---|---|---|
 | `GET` | `/` | Show API name, version, and available resources | None | `200 OK` |
 | `GET` | `/health` | Check whether the API is running | None | `200 OK` |
-| `GET` | `/tasks` | Return all tasks | None | `200 OK` |
+| `GET` | `/tasks` | Return all tasks; optionally filter by `done` status | None | `200 OK` |
 | `GET` | `/tasks/{id}` | Return one task by ID | None | `200 OK` |
 | `POST` | `/tasks` | Create a task | `{"title": "Study"}` | `201 Created` |
 | `PUT` | `/tasks/{id}` | Update a task's `title`, `done`, or both | `{"title": "Study FastAPI", "done": true}` | `200 OK` |
 | `DELETE` | `/tasks/{id}` | Delete a task | None | `204 No Content` |
 
 Requests for an unknown task ID return `404 Not Found`. An empty or invalid PUT body returns `400 Bad Request`.
+
+### Filter tasks
+
+Use the optional `done` query parameter to filter tasks by completion status:
+
+```bash
+# Return completed tasks
+curl "http://127.0.0.1:8000/tasks?done=true"
+
+# Return open tasks
+curl "http://127.0.0.1:8000/tasks?done=false"
+```
+
+Calling `/tasks` without the query parameter still returns every task.
 
 ## Example request
 

@@ -18,9 +18,21 @@ async def health():
     return { "status" : "OK" }
 
 @app.get("/tasks")
-async def getTasks():
-    """Return tasks."""
-    return tasks
+async def getTasks(done: bool | None=None):
+    """Return all tasks, optionally filtered by completion status."""
+    query_tasks=[]
+    if done:
+        for task in tasks:
+            if task["done"]:
+                query_tasks.append(task)
+        return query_tasks
+    elif done == False:
+        for task in tasks:
+            if not task["done"]:
+                query_tasks.append(task)
+        return query_tasks
+    else:
+        return tasks
 
 @app.get("/tasks/{id}", status_code=200)
 async def tasksId(id: int,response: Response):
@@ -32,7 +44,7 @@ async def tasksId(id: int,response: Response):
     return {"error": f"Task {id} not found"}
 
 @app.post("/tasks",status_code=201)
-async def createTask(request: Request,response: Response):
+async def createTask(request: Request,response: Response,):
     """Create a new task."""
     data = await request.json()
     title = data["title"]
