@@ -9,7 +9,7 @@ tasks = [
 
 @app.get("/")
 async def root():
-    """Return all tasks."""
+    """API description."""
     return {"name": "Task API", "version": "1.0", "endpoints": ["tasks"] }
 
 @app.get("/health")
