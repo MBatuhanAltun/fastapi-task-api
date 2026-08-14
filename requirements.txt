@@ -1,1 +1,3 @@
 fastapi[standard]
+psycopg
+psycopg_pool

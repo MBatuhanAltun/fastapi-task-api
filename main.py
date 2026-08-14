@@ -1,11 +1,18 @@
 from fastapi import FastAPI, Response, status, Request
-app = FastAPI()
+from connect import create_pool
+from config import load_config
+from contextlib import asynccontextmanager
 
-tasks = [
-    {"id": 1, "title": "Study", "done": False},
-    {"id": 2, "title": "Read", "done": True},
-    {"id": 3, "title": "Exercise", "done": True}
-]
+config = load_config()
+pool = create_pool(config)
+
+@asynccontextmanager
+async def lifespan(instance: FastAPI):
+    await pool.open()
+    yield
+    await pool.close()
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 async def root():
@@ -20,26 +27,21 @@ async def health():
 @app.get("/tasks")
 async def getTasks(done: bool | None=None):
     """Return all tasks, optionally filtered by completion status."""
-    query_tasks=[]
-    if done:
-        for task in tasks:
-            if task["done"]:
-                query_tasks.append(task)
-        return query_tasks
-    elif done == False:
-        for task in tasks:
-            if not task["done"]:
-                query_tasks.append(task)
-        return query_tasks
-    else:
-        return tasks
-
+    async with pool.connection() as conn:
+        if done == False:
+            cursor = await conn.execute("SELECT * FROM tasks WHERE done = 'F'")
+        else:
+            cursor = await conn.execute("SELECT * FROM tasks WHERE done = 'T'")
+        row = await cursor.fetchall()
+        return row
 @app.get("/tasks/{id}", status_code=200)
 async def tasksId(id: int,response: Response):
     """Return a task by its ID."""
-    for task in tasks:
-        if task["id"] == id:
-            return task
+    async with pool.connection() as conn:
+        cursor = await conn.execute("SELECT * FROM tasks WHERE id = %s",(id,))
+    row = await cursor.fetchall()
+    if row:
+        return row
     response.status_code = 404
     return {"error": f"Task {id} not found"}
 
