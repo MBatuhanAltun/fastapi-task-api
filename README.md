@@ -61,7 +61,7 @@ content-type: application/json
 
 With the server running, open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to explore and test the API interactively.
 
-![FastAPI Task API Swagger UI](./image.png)
+![FastAPI Task API Swagger UI](docs/image.png)
 
 ## AI vs me
 
