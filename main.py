@@ -84,25 +84,20 @@ async def update_task(id: int, request: Request, response: Response):
     if "done" in data and not isinstance(data["done"], bool):
         response.status_code = 400
         return {"error": "Done must be true or false"}
-
-    for task in tasks:
-        if task["id"] == id:
-            if "title" in data:
-                task["title"] = data["title"]
-            if "done" in data:
-                task["done"] = data["done"]
-            return task
-
+    async with pool.connection() as conn:
+        cursor = await conn.execute("UPDATE tasks SET title = %s, done = %s WHERE id = %s returning id,title,done",(data.get("title"),data.get("done"),id))
+        updated_task = await cursor.fetchone()
+        return updated_task
     response.status_code = 404
     return {"error": f"Task {id} not found"}
 
 @app.delete("/tasks/{id}")
 async def delete_task(id: int,response: Response):
     """Delete a task by its ID."""
-    for i in range(len(tasks)):
-        if tasks[i]["id"] == id:
-            tasks.pop(i)
-            response.status_code=204
-            return response
+    async with pool.connection() as conn:
+        cursor = await conn.execute("DELETE FROM tasks WHERE id = %s returning id,title,done",(id,))
+        deleted_task = await cursor.fetchone()
+        response.status_code = 204
+        return deleted_task
     response.status_code=404
     return {"error": "Unknown ID"}
