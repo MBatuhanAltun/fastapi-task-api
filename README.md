@@ -166,3 +166,19 @@ Keep ID generation correct even after tasks are deleted. Configure useful Swagge
 The rematch changed the AI version to match the exact seed data and system
 responses, return `400`, support partial `PUT`, remove `PATCH`, and pass the
 create-after-delete case while retaining typed validation and Swagger schemas.
+
+SQL 
+tasks.db=# SELECT * FROM tasks;
+ id |        title        | done 
+----+---------------------+------
+  2 | finish house chores | f
+  3 | Study english       | f
+  4 | go to market        | f
+ 13 | batu                | f
+ 16 | batu                | f
+ 17 | batu                | f
+ 18 | batu2               | f
+ 19 | batu2               | f
+ 20 | batu2               | f
+ 21 | take the trash      | t
+(10 rows)

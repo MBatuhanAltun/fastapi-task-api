@@ -88,7 +88,7 @@ async def update_task(id: int, request: Request, response: Response):
         cursor = await conn.execute("UPDATE tasks SET title = %s, done = %s WHERE id = %s returning id,title,done",(data.get("title"),data.get("done"),id))
         updated_task = await cursor.fetchone()
         return updated_task
-    response.status_code = 404
+    response.status_code = 404 
     return {"error": f"Task {id} not found"}
 
 @app.delete("/tasks/{id}")
@@ -97,7 +97,7 @@ async def delete_task(id: int,response: Response):
     async with pool.connection() as conn:
         cursor = await conn.execute("DELETE FROM tasks WHERE id = %s returning id,title,done",(id,))
         deleted_task = await cursor.fetchone()
-        response.status_code = 204
-        return deleted_task
+        response.status_code = 204 # Clears body of the response
+        return deleted_task # redundant line
     response.status_code=404
     return {"error": "Unknown ID"}
