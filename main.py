@@ -30,10 +30,13 @@ async def getTasks(done: bool | None=None):
     async with pool.connection() as conn:
         if done == False:
             cursor = await conn.execute("SELECT * FROM tasks WHERE done = 'F'")
+        elif done == None:
+            cursor = await conn.execute("SELECT * FROM tasks")
         else:
-            cursor = await conn.execute("SELECT * FROM tasks WHERE done = 'T'")
+            cursor = await conn.execute("SELECT * FROM tasks WHERE done = 't'")
         row = await cursor.fetchall()
         return row
+    
 @app.get("/tasks/{id}", status_code=200)
 async def tasksId(id: int,response: Response):
     """Return a task by its ID."""
@@ -54,14 +57,11 @@ async def createTask(request: Request,response: Response,):
         response.status_code = 400
         return {"error": "Title is empty"}
     done = False
-    id = max(task["id"] for task in tasks) + 1 if tasks else 1
-    new_task={
-    "id": id,
-    "title": title,
-    "done": done
-}
-    tasks.append(new_task)
-    return new_task
+    async with pool.connection() as conn:
+        cursor = await conn.execute("INSERT INTO tasks (title,done) VALUES (%s,%s) returning id,title,done",(title,done,))
+        new_task = await cursor.fetchone()
+        return new_task
+        
 
 
 @app.put("/tasks/{id}")
