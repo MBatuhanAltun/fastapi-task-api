@@ -301,3 +301,5 @@ Keep ID generation correct even after tasks are deleted. Configure useful Swagge
 The rematch changed the AI version to match the exact seed data and system
 responses, return `400`, support partial `PUT`, remove `PATCH`, and pass the
 create-after-delete case while retaining typed validation and Swagger schemas.
+docker run --name taskdb -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=tasks \
+-p 127.0.0.1:5433:5432 -v taskdata:/var/lib/postgresql/data -d postgres:17
