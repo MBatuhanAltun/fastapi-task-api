@@ -1,3 +1,4 @@
 fastapi[standard]
-psycopg
+psycopg[binary]
 psycopg_pool
+python-dotenv

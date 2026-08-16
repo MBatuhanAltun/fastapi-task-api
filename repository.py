@@ -26,13 +26,13 @@ async def create_task(pool: AsyncConnectionPool, title: str, done: bool):
         new_task = await cursor.fetchone()
         return new_task
     
-async def update_task(pool: AsyncConnectionPool, title: str, done: bool):
+async def update_task(pool: AsyncConnectionPool, id: int, title: str | None, done: bool | None):
     async with pool.connection() as conn:
-        cursor = await conn.execute("UPDATE tasks SET title = %s, done = %s WHERE id = %s returning id,title,done",(title,done,id))
+        cursor = await conn.execute("UPDATE tasks SET title = COALESCE(%s, title), done = COALESCE(%s, done) WHERE id = %s returning id,title,done",(title,done,id))
         updated_task = await cursor.fetchone()
         return updated_task
 
-async def delete_task(pool: AsyncConnectionPool, int: id):
+async def delete_task(pool: AsyncConnectionPool, id: int):
     async with pool.connection() as conn:
         cursor = await conn.execute("DELETE FROM tasks WHERE id = %s returning id,title,done",(id,))
-        return cursor.fetchone()
+        return await cursor.fetchone()

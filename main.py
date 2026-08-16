@@ -47,8 +47,11 @@ async def get_task_endpoint(id: int,response: Response):
 async def create_task_endpoint(request: Request,response: Response,):
     """Create a new task."""
     data = await request.json()
+    if not isinstance(data, dict):
+        response.status_code = 400
+        return {"error": "Request body must be a JSON object"}
     title = data.get("title")
-    if not title:
+    if not isinstance(title, str) or not title.strip():
         response.status_code = 400
         return {"error": "Title is empty"}
     done = False
@@ -76,7 +79,7 @@ async def update_task_endpoint(id: int, request: Request, response: Response):
     if "done" in data and not isinstance(data["done"], bool):
         response.status_code = 400
         return {"error": "Done must be true or false"}
-    updated_task = await repository.update_task(pool,data.get("title"),data.get("done"),id)
+    updated_task = await repository.update_task(pool,id,data.get("title"),data.get("done"))
     if updated_task:
         return updated_task
     response.status_code = 404 
@@ -87,6 +90,6 @@ async def delete_task_endpoint(id: int,response: Response):
     """Delete a task by its ID."""
     task = await repository.delete_task(pool,id)
     if task:
-        response.status_code=204
+        return Response(status_code=204)
     response.status_code=404
     return {"error": "Unknown ID"}
